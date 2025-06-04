@@ -1,0 +1,9 @@
+components/
+│
+├── Students/
+│   ├── StudentFormModal.jsx       # Modal with form
+│   ├── FilterBar.jsx              # Grade & Section filter UI
+│   └── StudentTable.jsx           # Table display
+│
+└── UI/
+    └── ModalWrapper.jsx           # Generic animated modal with Framer Motion
