@@ -1,5 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
 import ModalWrapper from "../UI/ModalWrapper";
+
+const StudentSchema = Yup.object().shape({
+  name: Yup.string()
+    .min(3, "Name must be at least 3 characters")
+    .required("Name is required"),
+  grade: Yup.string().required("Grade is required"),
+  section: Yup.string().required("Section is required"),
+  email: Yup.string().email("Invalid email format"),
+  phone: Yup.string()
+    .matches(/^\d{10}$/, "Phone must be exactly 10 digits")
+    .nullable()
+    .notRequired(),
+  dob: Yup.date()
+    .max(new Date(), "DOB must be in the past")
+    .nullable()
+    .notRequired(),
+  guardianName: Yup.string(),
+  address: Yup.string(),
+});
 
 export default function StudentFormModal({
   show,
@@ -8,216 +29,219 @@ export default function StudentFormModal({
   editingStudent,
   gradeSections,
 }) {
-  const [form, setForm] = useState({
-    name: "",
-    grade: "",
-    section: "",
-    email: "",
-    phone: "",
-    dob: "",
-    address: "",
-    guardianName: "",
-  });
-
-  const [errors, setErrors] = useState({});
-
+  // Extract unique grades and sections for selects
   const uniqueGrades = [...new Set(gradeSections.map((gs) => gs.grade))];
   const uniqueSections = [...new Set(gradeSections.map((gs) => gs.section))];
 
-  useEffect(() => {
-    if (editingStudent) {
-      setForm({
-        name: editingStudent.name,
-        grade: editingStudent.grade,
-        section: editingStudent.section,
+  const initialValues = editingStudent
+    ? {
+        name: editingStudent.name || "",
+        grade: editingStudent.grade || "",
+        section: editingStudent.section || "",
         email: editingStudent.email || "",
         phone: editingStudent.phone || "",
         dob: editingStudent.dob || "",
         address: editingStudent.address || "",
         guardianName: editingStudent.guardianName || "",
-      });
-    } else {
-      resetForm();
-    }
-  }, [editingStudent, show]);
-
-  const resetForm = () => {
-    setForm({
-      name: "",
-      grade: "",
-      section: "",
-      email: "",
-      phone: "",
-      dob: "",
-      address: "",
-      guardianName: "",
-    });
-    setErrors({});
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-
-    const newErrors = { ...errors };
-
-    switch (name) {
-      case "name":
-        newErrors.name =
-          value.length < 3 ? "Name must be at least 3 characters" : "";
-        break;
-      case "grade":
-        newErrors.grade = !value ? "Grade is required" : "";
-        break;
-      case "section":
-        newErrors.section = !value ? "Section is required" : "";
-        break;
-      case "email":
-        newErrors.email =
-          value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-            ? "Invalid email format"
-            : "";
-        break;
-      case "phone":
-        newErrors.phone =
-          value && !/^\d{10}$/.test(value) ? "Phone must be 10 digits" : "";
-        break;
-      case "dob":
-        const today = new Date();
-        const dobDate = new Date(value);
-        newErrors.dob =
-          value && dobDate >= today ? "DOB must be in the past" : "";
-        break;
-      default:
-        break;
-    }
-
-    setErrors(newErrors);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(form, editingStudent?.id || null);
-  };
+      }
+    : {
+        name: "",
+        grade: "",
+        section: "",
+        email: "",
+        phone: "",
+        dob: "",
+        address: "",
+        guardianName: "",
+      };
 
   return (
     <ModalWrapper show={show} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <h2 className="text-xl font-semibold">
+      <div className="max-w-xl w-full">
+        <h2 className="text-2xl font-semibold mb-6 text-center">
           {editingStudent ? "Edit Student" : "Add New Student"}
         </h2>
+        <Formik
+          initialValues={initialValues}
+          validationSchema={StudentSchema}
+          enableReinitialize={true}
+          onSubmit={(values, { setSubmitting }) => {
+            onSubmit(values, editingStudent?.id || null);
+            setSubmitting(false);
+          }}
+        >
+          {({ isSubmitting }) => (
+            <Form className="space-y-4">
+              <div>
+                <label htmlFor="name" className="block font-medium mb-1">
+                  Name<span className="text-red-600">*</span>
+                </label>
+                <Field
+                  name="name"
+                  placeholder="Enter name"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <ErrorMessage
+                  name="name"
+                  component="div"
+                  className="text-red-600 text-sm mt-1"
+                />
+              </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <input
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            placeholder="Name"
-            className="border p-2 rounded"
-            required
-          />
-          {errors.name && <p className="text-red-600 text-xs">{errors.name}</p>}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="grade" className="block font-medium mb-1">
+                    Grade<span className="text-red-600">*</span>
+                  </label>
+                  <Field
+                    as="select"
+                    name="grade"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">Select Grade</option>
+                    {uniqueGrades.map((grade) => (
+                      <option key={grade} value={grade}>
+                        {grade}
+                      </option>
+                    ))}
+                  </Field>
+                  <ErrorMessage
+                    name="grade"
+                    component="div"
+                    className="text-red-600 text-sm mt-1"
+                  />
+                </div>
 
-          <select
-            name="grade"
-            value={form.grade}
-            onChange={handleChange}
-            className="border p-2 rounded"
-            required
-          >
-            <option value="">Select Grade</option>
-            {uniqueGrades.map((grade, idx) => (
-              <option key={idx} value={grade}>
-                {grade}
-              </option>
-            ))}
-          </select>
-          {errors.grade && (
-            <p className="text-red-600 text-xs">{errors.grade}</p>
+                <div>
+                  <label htmlFor="section" className="block font-medium mb-1">
+                    Section<span className="text-red-600">*</span>
+                  </label>
+                  <Field
+                    as="select"
+                    name="section"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    <option value="">Select Section</option>
+                    {uniqueSections.map((section) => (
+                      <option key={section} value={section}>
+                        {section}
+                      </option>
+                    ))}
+                  </Field>
+                  <ErrorMessage
+                    name="section"
+                    component="div"
+                    className="text-red-600 text-sm mt-1"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block font-medium mb-1">
+                  Email
+                </label>
+                <Field
+                  name="email"
+                  type="email"
+                  placeholder="Enter email"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <ErrorMessage
+                  name="email"
+                  component="div"
+                  className="text-red-600 text-sm mt-1"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="phone" className="block font-medium mb-1">
+                  Phone
+                </label>
+                <Field
+                  name="phone"
+                  placeholder="Enter 10 digit phone number"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <ErrorMessage
+                  name="phone"
+                  component="div"
+                  className="text-red-600 text-sm mt-1"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="dob" className="block font-medium mb-1">
+                  Date of Birth
+                </label>
+                <Field
+                  name="dob"
+                  type="date"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <ErrorMessage
+                  name="dob"
+                  component="div"
+                  className="text-red-600 text-sm mt-1"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="guardianName"
+                  className="block font-medium mb-1"
+                >
+                  Guardian Name
+                </label>
+                <Field
+                  name="guardianName"
+                  placeholder="Enter guardian name"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <ErrorMessage
+                  name="guardianName"
+                  component="div"
+                  className="text-red-600 text-sm mt-1"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="address" className="block font-medium mb-1">
+                  Address
+                </label>
+                <Field
+                  name="address"
+                  as="textarea"
+                  rows="3"
+                  placeholder="Enter address"
+                  className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <ErrorMessage
+                  name="address"
+                  component="div"
+                  className="text-red-600 text-sm mt-1"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 rounded bg-gray-400 text-white hover:bg-gray-500 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition"
+                >
+                  {editingStudent ? "Update" : "Add"}
+                </button>
+              </div>
+            </Form>
           )}
-
-          <select
-            name="section"
-            value={form.section}
-            onChange={handleChange}
-            className="border p-2 rounded"
-            required
-          >
-            <option value="">Select Section</option>
-            {uniqueSections.map((section, idx) => (
-              <option key={idx} value={section}>
-                {section}
-              </option>
-            ))}
-          </select>
-          {errors.section && (
-            <p className="text-red-600 text-xs">{errors.section}</p>
-          )}
-
-          <input
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            placeholder="Email"
-            className="border p-2 rounded"
-          />
-          {errors.email && (
-            <p className="text-red-600 text-xs">{errors.email}</p>
-          )}
-
-          <input
-            name="phone"
-            value={form.phone}
-            onChange={handleChange}
-            placeholder="Phone"
-            className="border p-2 rounded"
-          />
-          {errors.phone && (
-            <p className="text-red-600 text-xs">{errors.phone}</p>
-          )}
-
-          <input
-            type="date"
-            name="dob"
-            value={form.dob}
-            onChange={handleChange}
-            className="border p-2 rounded"
-          />
-          {errors.dob && <p className="text-red-600 text-xs">{errors.dob}</p>}
-
-          <input
-            name="guardianName"
-            value={form.guardianName}
-            onChange={handleChange}
-            placeholder="Guardian Name"
-            className="border p-2 rounded"
-          />
-
-          <input
-            name="address"
-            value={form.address}
-            onChange={handleChange}
-            placeholder="Address"
-            className="border p-2 rounded col-span-2 md:col-span-3"
-          />
-        </div>
-
-        <div className="flex justify-end space-x-2 pt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="bg-gray-400 text-white px-4 py-2 rounded"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            {editingStudent ? "Update" : "Add"}
-          </button>
-        </div>
-      </form>
+        </Formik>
+      </div>
     </ModalWrapper>
   );
 }
