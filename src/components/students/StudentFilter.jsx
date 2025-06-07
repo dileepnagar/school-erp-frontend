@@ -1,65 +1,42 @@
 import React from "react";
-import { motion } from "framer-motion";
 
-export default function StudentFilter({
-  filters,
-  onChange,
-  grades,
-  sections,
-  onClear,
-}) {
+export default function StudentFilter({ filters, onChange, grades, sections }) {
   return (
-    <motion.div
-      className="mb-4 flex flex-wrap gap-2 items-center"
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-    >
+    <form className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <input
         type="text"
         name="name"
-        placeholder="Filter by name"
-        className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
         value={filters.name}
         onChange={onChange}
+        placeholder="Search by name"
+        className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"
       />
-
       <select
         name="grade"
-        className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
         value={filters.grade}
         onChange={onChange}
+        className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"
       >
         <option value="">All Grades</option>
-        {grades.map((grade, idx) => (
-          <option key={idx} value={grade}>
-            {grade}
+        {grades.map((g) => (
+          <option key={g} value={g}>
+            Grade {g}
           </option>
         ))}
       </select>
-
       <select
         name="section"
-        className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
         value={filters.section}
         onChange={onChange}
+        className="border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-400"
       >
         <option value="">All Sections</option>
-        {sections.map((section, idx) => (
-          <option key={idx} value={section}>
-            {section}
+        {sections.map((s) => (
+          <option key={s} value={s}>
+            Section {s}
           </option>
         ))}
       </select>
-
-      <button
-        onClick={onClear}
-        className="ml-2 px-3 py-2 bg-gray-200 rounded hover:bg-gray-300 transition"
-        aria-label="Clear all filters"
-        type="button"
-      >
-        Clear Filters
-      </button>
-    </motion.div>
+    </form>
   );
 }
